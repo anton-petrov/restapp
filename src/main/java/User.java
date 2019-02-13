@@ -1,3 +1,5 @@
+import com.google.gson.GsonBuilder;
+
 public class User implements Cloneable {
     private Integer id;
     private String email;
@@ -90,5 +92,7 @@ public class User implements Cloneable {
         this.position = position;
     }
 
-
+    public String toJSON() {
+        return new GsonBuilder().setPrettyPrinting().create().toJson(this);
+    }
 }
