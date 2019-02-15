@@ -1,14 +1,10 @@
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import jdk.jshell.spi.ExecutionControl;
 
 import java.text.SimpleDateFormat;
-import java.util.*;
-
-//import org.jsoup.Jsoup;
-//import org.jsoup.nodes.Document;
-//import org.jsoup.nodes.Element;
-//import org.jsoup.select.Elements;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
 
 import static spark.Spark.*;
 
@@ -31,45 +27,53 @@ public class Main {
         }
 
         @Override
-        public User getUser(String id) {
-            return null;
+        public User getUser(Integer id) {
+            return dbUsers.get(id);
         }
 
         @Override
-        public User editUser(User user) throws ExecutionControl.UserException {
-            return null;
+        public User editUser(User user) {
+            try {
+                if (user.getId() == null)
+                    throw new Exception("ID cannot be blank");
+
+                User editUser = dbUsers.get(user.getId());
+                if (editUser == null)
+                    throw new Exception("User not found");
+
+                if (user.getEmail() != null) {
+                    editUser.setEmail(user.getEmail());
+                }
+                if (user.getName() != null) {
+                    editUser.setName(user.getName());
+                }
+                if (user.getPosition() != null) {
+                    editUser.setPosition(user.getPosition());
+                }
+                editUser.setAge(user.getAge());
+                editUser.setSalary(user.getSalary());
+                return editUser;
+            } catch (Exception ex) {
+                return null;
+            }
         }
 
         @Override
-        public void deleteUser(String id) {
-
+        public void deleteUser(Integer id) {
+            dbUsers.remove(id);
         }
 
         @Override
-        public boolean userExist(String id) {
-            return false;
+        public boolean userExist(Integer id) {
+            return dbUsers.containsKey(id);
         }
     };
 
-    private static String getData() {
-        var gson = new GsonBuilder().setPrettyPrinting().create();
-        var data = new ArrayList<>(
-                Arrays.asList(
-                        new User(1, "John Doe", "john@doe.com"),
-                        new User(2, "Артем Шепелев", "rw@gmail.ru"),
-                        new User(3, "Баба Валя", "babkavalya@microsoft.com")
-                )
-        );
-        return gson.toJson(data);
-    }
-
     private static void init() {
-        // ...
         userService.addUser(new User(0, "User", "user@user.com"));
     }
 
-    public static void main(String[] args) {
-        init();
+    private static void startRestService() {
         get("/hello", (req, res) -> "Hello form REST service! All working. " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
                 .format(new Date()));
 
@@ -85,12 +89,12 @@ public class Main {
             return new GsonBuilder().setPrettyPrinting().create().toJson(new StandardResponse(StatusResponse.SUCCESS));
         });
 
-
         get("/users/:id", (request, response) -> {
             response.type("application/json");
             return new Gson().toJson(
-                    new StandardResponse(StatusResponse.SUCCESS,new Gson()
-                            .toJsonTree(userService.getUser(request.params(":id")))));
+                    new StandardResponse(StatusResponse.SUCCESS, new Gson()
+                            .toJsonTree(userService.getUser(Integer.parseInt(request.params(":id")))))
+            );
         });
         put("/users/:id", (request, response) -> {
             response.type("application/json");
@@ -99,17 +103,17 @@ public class Main {
 
             if (editedUser != null) {
                 return new Gson().toJson(
-                        new StandardResponse(StatusResponse.SUCCESS,new Gson()
+                        new StandardResponse(StatusResponse.SUCCESS, new Gson()
                                 .toJsonTree(editedUser)));
             } else {
                 return new Gson().toJson(
-                        new StandardResponse(StatusResponse.ERROR,new Gson()
+                        new StandardResponse(StatusResponse.ERROR, new Gson()
                                 .toJson("User not found or error in edit")));
             }
         });
         delete("/users/:id", (request, response) -> {
             response.type("application/json");
-            userService.deleteUser(request.params(":id"));
+            userService.deleteUser(Integer.parseInt(request.params(":id")));
             return new Gson().toJson(
                     new StandardResponse(StatusResponse.SUCCESS, "user deleted"));
         });
@@ -118,8 +122,13 @@ public class Main {
             return new Gson().toJson(
                     new StandardResponse(StatusResponse.SUCCESS,
                             (userService.userExist(
-                                    request.params(":id"))) ? "User exists" : "User does not exists" ));
+                                    Integer.parseInt(request.params(":id"))) ? "User exists" : "User does not exists"))
+            );
         });
-        System.out.println(getData());
+    }
+
+    public static void main(String[] args) {
+        init();
+        startRestService();
     }
 }

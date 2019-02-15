@@ -1,16 +1,18 @@
 import jdk.jshell.spi.ExecutionControl;
+
 import java.util.Collection;
 
 public interface UserService {
-    public void addUser (User user);
+    void addUser(User user);
 
-    public Collection<User> getUsers ();
-    public User getUser (String id);
+    Collection<User> getUsers();
 
-    public User editUser (User user)
+    User getUser(Integer id);
+
+    User editUser(User user)
             throws ExecutionControl.UserException;
 
-    public void deleteUser (String id);
+    void deleteUser(Integer id);
 
-    public boolean userExist (String id);
+    boolean userExist(Integer id);
 }
